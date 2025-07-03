@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora de Horas</title>
+  <link rel="icon" type="image/png" href="Bolivarian_National_Police_seal.png" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: url('afbe4cfe-8456-4cde-b7f6-33ae36e98fa5.png') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+    }
+    .logo {
+      width: 100px;
+      margin-bottom: 20px;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    input, button {
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #registro {
+      margin-top: 20px;
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+    .log-entry {
+      background: #f9f9f9;
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 5px;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .log-entry span {
+      flex: 1;
+    }
+    .delete-btn {
+      background: red;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="Bolivarian_National_Police_seal.png" alt="Logo PNB" class="logo" />
+    <h2>Calculadora de Horas Trabajadas</h2>
+
+    <!-- Formulario de nombre -->
+    <div id="nombre-formulario">
+      <input type="text" id="nombreUsuarioInput" placeholder="Ingresa tu nombre para guardar los registros" />
+      <button onclick="guardarNombre()">Continuar</button>
+    </div>
+
+    <!-- Formulario principal -->
+    <div id="formulario-horas" style="display: none;">
+      <p><strong>Bienvenido, <span id="nombreMostrado"></span></strong></p>
+      <input type="time" id="entrada" placeholder="Hora de Entrada" />
+      <input type="time" id="salida" placeholder="Hora de Salida" />
+      <button onclick="calcularHoras()">Calcular</button>
+      <p id="resultado"></p>
+      <div id="registro"></div>
+    </div>
+  </div>
+
+  <script>
+    const entradaInput = document.getElementById("entrada");
+    const salidaInput = document.getElementById("salida");
+    const resultado = document.getElementById("resultado");
+    const registro = document.getElementById("registro");
+    const nombreForm = document.getElementById("nombre-formulario");
+    const formularioHoras = document.getElementById("formulario-horas");
+    const nombreMostrado = document.getElementById("nombreMostrado");
+    const nombreUsuarioInput = document.getElementById("nombreUsuarioInput");
+
+    let nombreUsuario = localStorage.getItem("nombreUsuario");
+
+    // Mostrar formulario si ya se conoce el nombre
+    if (nombreUsuario) {
+      mostrarFormulario(nombreUsuario);
+    }
+
+    function guardarNombre() {
+      const nombre = nombreUsuarioInput.value.trim();
+      if (!nombre) {
+        alert("Por favor ingresa tu nombre.");
+        return;
+      }
+      localStorage.setItem("nombreUsuario", nombre);
+      mostrarFormulario(nombre);
+    }
+
+    function mostrarFormulario(nombre) {
+      nombreUsuario = nombre;
+      nombreForm.style.display = "none";
+      formularioHoras.style.display = "block";
+      nombreMostrado.textContent = nombre;
+      mostrarRegistros();
+    }
+
+    function obtenerRegistros() {
+      const data = localStorage.getItem("registros_" + nombreUsuario);
+      return data ? JSON.parse(data) : [];
+    }
+
+    function guardarRegistros(registros) {
+      localStorage.setItem("registros_" + nombreUsuario, JSON.stringify(registros));
+    }
+
+    function mostrarRegistros() {
+      const registros = obtenerRegistros();
+      registro.innerHTML = "";
+      registros.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "log-entry";
+        div.innerHTML = `
+          <span>[${item.fecha}] Entrada: ${item.entrada}, Salida: ${item.salida}, Total: ${item.horas} hrs.</span>
+          <button class="delete-btn" onclick="eliminarRegistro(${index})">Borrar</button>
+        `;
+        registro.appendChild(div);
+      });
+    }
+
+    function eliminarRegistro(index) {
+      const registros = obtenerRegistros();
+      registros.splice(index, 1);
+      guardarRegistros(registros);
+      mostrarRegistros();
+    }
+
+    function calcularHoras() {
+      const entrada = entradaInput.value;
+      const salida = salidaInput.value;
+
+      if (!entrada || !salida) {
+        resultado.innerText = "Completa ambas horas.";
+        return;
+      }
+
+      const horaEntrada = new Date(`1970-01-01T${entrada}:00`);
+      const horaSalida = new Date(`1970-01-01T${salida}:00`);
+
+      let diferencia = (horaSalida - horaEntrada) / 1000 / 60 / 60;
+      if (diferencia < 0) diferencia += 24;
+
+      const horas = diferencia.toFixed(2);
+      const ahora = new Date().toLocaleString();
+
+      resultado.innerText = `Horas trabajadas: ${horas} horas.`;
+
+      const nuevoRegistro = {
+        fecha: ahora,
+        entrada: entrada,
+        salida: salida,
+        horas: horas,
+        nombre: nombreUsuario // Aseguramos que el nombre esté incluido
+      };
+
+      const registros = obtenerRegistros();
+      registros.unshift(nuevoRegistro);
+      guardarRegistros(registros);
+      mostrarRegistros();
+
+      // Enviar los datos a Google Sheets
+      fetch("https://script.google.com/macros/s/AKfycbxb8Ej1vmcwm8s0ey5jb-PBaUK1wzSB5UoHRovurCpKNu1wh9xo0ZQc6wN5itXk1Wyq/exec", {
+        method: "POST",
+        body: JSON.stringify(nuevoRegistro),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      .then(response => response.text())
+      .then(data => {
+        console.log("Datos enviados a Google Sheets:", data);
+      })
+      .catch(error => {
+        console.error("Error al enviar a Google Sheets:", error);
+      });
+    }
+  </script>
+</body>
+</html>
